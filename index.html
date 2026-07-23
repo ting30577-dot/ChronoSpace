@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="neon-cyber">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ChronoSpace — 为开发者打造的赛博朋克番茄钟、氛围音与任务看板。数据仅保存在你的浏览器中。"
+    />
+    <meta name="theme-color" content="#070711" />
+    <meta name="color-scheme" content="dark" />
+    <title>ChronoSpace · Cyber Focus Station</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- Classic deferred scripts keep the modular file layout while also working over file://. -->
+    <script defer src="js/timer.js"></script>
+    <script defer src="js/kanban.js"></script>
+    <script defer src="js/audio.js"></script>
+    <script defer src="js/background.js"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <canvas id="cyber-background" aria-hidden="true"></canvas>
+    <canvas id="completion-canvas" aria-hidden="true"></canvas>
+    <div class="noise-layer" aria-hidden="true"></div>
+
+    <div class="immersive-backdrop" id="immersive-backdrop" data-scene="rain" aria-hidden="true">
+      <img class="immersive-scene-image" id="immersive-scene-image" src="assets/backgrounds/rain-cafe.png" alt="" />
+      <canvas id="immersive-effects"></canvas>
+      <div class="immersive-color-wash"></div>
+      <div class="immersive-vignette"></div>
+    </div>
+
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="ChronoSpace 首页">
+          <span class="brand-mark" aria-hidden="true">
+            <span class="brand-orbit"></span>
+            <span class="brand-core"></span>
+          </span>
+          <span class="brand-copy">
+            <strong>CHRONO<span>SPACE</span></strong>
+            <small>PERSONAL FOCUS TERMINAL</small>
+          </span>
+        </a>
+
+        <div class="system-status" aria-label="系统状态">
+          <span class="status-light"></span>
+          <span>LOCAL SYSTEM</span>
+          <span class="status-divider">/</span>
+          <time id="system-time">00:00:00</time>
+        </div>
+
+        <div class="header-actions">
+          <label class="theme-picker" aria-label="选择主题">
+            <span aria-hidden="true">THEME</span>
+            <select id="theme-select">
+              <option value="neon-cyber">Neon Cyber</option>
+              <option value="tokyo-night">Tokyo Night</option>
+              <option value="matrix-green">Matrix Green</option>
+              <option value="synthwave-sunset">Synthwave Sunset</option>
+            </select>
+          </label>
+          <button class="icon-button" id="settings-button" type="button" aria-label="打开设置" title="设置">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 9 19.37a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.63a1.7 1.7 0 0 0 1-1.55V3h4v.08A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.37 9a1.7 1.7 0 0 0 1.55 1H21v4h-.08a1.7 1.7 0 0 0-1.55 1Z" />
+            </svg>
+          </button>
+          <button class="zen-button" id="zen-button" type="button" title="沉浸模式（Z）">
+            <span class="zen-corners" aria-hidden="true"></span>
+            <span>ZEN</span>
+            <kbd>Z</kbd>
+          </button>
+        </div>
+      </header>
+
+      <main class="dashboard" id="main-content">
+        <section class="panel timer-panel" aria-labelledby="timer-heading">
+          <div class="panel-corner corner-tl" aria-hidden="true"></div>
+          <div class="panel-corner corner-br" aria-hidden="true"></div>
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow"><span>01</span> SELECT COUNTDOWN</p>
+              <h1 id="timer-heading">时间驱动核心</h1>
+            </div>
+            <span class="module-status"><i></i> READY</span>
+          </header>
+
+          <div class="mode-switcher" role="tablist" aria-label="计时模式">
+            <button class="mode-button is-active" type="button" role="tab" aria-selected="true" data-mode="focus">
+              <span>FOCUS</span>
+              <small>深度专注</small>
+            </button>
+            <button class="mode-button" type="button" role="tab" aria-selected="false" data-mode="short">
+              <span>SHORT</span>
+              <small>短休憩</small>
+            </button>
+            <button class="mode-button" type="button" role="tab" aria-selected="false" data-mode="long">
+              <span>LONG</span>
+              <small>长休憩</small>
+            </button>
+          </div>
+
+          <div class="timer-stage">
+            <div class="orbit-label orbit-label-top" aria-hidden="true">CHRONO // ACTIVE</div>
+            <div class="orbit-label orbit-label-bottom" aria-hidden="true">25.00 MIN CYCLE</div>
+            <svg class="timer-ring" viewBox="0 0 320 320" aria-hidden="true">
+              <defs>
+                <linearGradient id="timer-gradient" x1="0" y1="0" x2="1" y2="1">
+                  <stop class="gradient-start" offset="0%" />
+                  <stop class="gradient-mid" offset="52%" />
+                  <stop class="gradient-end" offset="100%" />
+                </linearGradient>
+                <filter id="ring-glow" x="-60%" y="-60%" width="220%" height="220%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              <circle class="ring-guide" cx="160" cy="160" r="132" />
+              <circle class="ring-track" cx="160" cy="160" r="124" />
+              <circle class="ring-progress" id="timer-progress" cx="160" cy="160" r="124" pathLength="100" />
+              <circle class="ring-inner" cx="160" cy="160" r="105" />
+              <g class="ring-ticks">
+                <path d="M160 19v8M160 293v8M19 160h8M293 160h8" />
+                <path d="m60.3 60.3 5.7 5.7M254 254l5.7 5.7M60.3 259.7l5.7-5.7M254 66l5.7-5.7" />
+              </g>
+            </svg>
+            <div class="timer-readout" aria-live="polite">
+              <span class="timer-kicker" id="timer-kicker">DEEP WORK</span>
+              <strong id="timer-display">25:00</strong>
+              <span class="timer-state" id="timer-state">等待启动</span>
+            </div>
+          </div>
+
+          <div class="cycle-indicator" aria-label="本轮番茄进度">
+            <span>CYCLE</span>
+            <div id="cycle-pips" class="cycle-pips">
+              <i></i><i></i><i></i><i></i>
+            </div>
+            <span id="cycle-label">0 / 4</span>
+          </div>
+
+          <div class="timer-controls">
+            <button class="control-button secondary" id="reset-timer" type="button" aria-label="重置计时器" title="重置（R）">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 4.9A10 10 0 1 1 2 12h2a8 8 0 1 0 2.34-5.66L9 9H3V3l1.9 1.9Z" /></svg>
+            </button>
+            <button class="control-button primary" id="toggle-timer" type="button">
+              <span class="button-icon" aria-hidden="true">
+                <svg class="play-icon" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z" /></svg>
+                <svg class="pause-icon" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
+              </span>
+              <span id="toggle-label">开始沉浸</span>
+              <kbd>SPACE</kbd>
+            </button>
+            <button class="control-button secondary" id="skip-timer" type="button" aria-label="跳到下一阶段" title="下一阶段">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 10 7L5 19V5Zm11 0h3v14h-3V5Z" /></svg>
+            </button>
+          </div>
+
+          <div class="active-mission" id="active-mission">
+            <span class="mission-pulse" aria-hidden="true"></span>
+            <div>
+              <small>CURRENT MISSION</small>
+              <strong id="active-task-title">尚未选择任务</strong>
+            </div>
+            <button id="clear-active-task" type="button" hidden>解除</button>
+          </div>
+        </section>
+
+        <section class="panel kanban-panel" aria-labelledby="kanban-heading">
+          <div class="panel-corner corner-tr" aria-hidden="true"></div>
+          <header class="panel-header kanban-header">
+            <div>
+              <p class="eyebrow"><span>02</span> MISSION CONTROL</p>
+              <h2 id="kanban-heading">任务轨道</h2>
+            </div>
+            <button class="add-task-button" id="add-task-button" type="button">
+              <span aria-hidden="true">＋</span> 新建任务 <kbd>N</kbd>
+            </button>
+          </header>
+
+          <div class="kanban-board" id="kanban-board">
+            <section class="kanban-column" data-column="todo" aria-labelledby="todo-heading">
+              <header>
+                <div><span class="column-signal signal-todo"></span><h3 id="todo-heading">待办</h3></div>
+                <span class="column-count" data-count="todo">0</span>
+              </header>
+              <div class="task-list" data-task-list="todo" role="list"></div>
+            </section>
+            <section class="kanban-column" data-column="progress" aria-labelledby="progress-heading">
+              <header>
+                <div><span class="column-signal signal-progress"></span><h3 id="progress-heading">进行中</h3></div>
+                <span class="column-count" data-count="progress">0</span>
+              </header>
+              <div class="task-list" data-task-list="progress" role="list"></div>
+            </section>
+            <section class="kanban-column" data-column="done" aria-labelledby="done-heading">
+              <header>
+                <div><span class="column-signal signal-done"></span><h3 id="done-heading">已完成</h3></div>
+                <span class="column-count" data-count="done">0</span>
+              </header>
+              <div class="task-list" data-task-list="done" role="list"></div>
+            </section>
+          </div>
+          <p class="kanban-hint"><span aria-hidden="true">↳</span> 拖拽卡片切换轨道 · 点击准星设为当前专注任务</p>
+        </section>
+
+        <section class="panel stats-panel" aria-labelledby="stats-heading">
+          <header class="panel-header compact">
+            <div>
+              <p class="eyebrow"><span>03</span> NEURAL METRICS</p>
+              <h2 id="stats-heading">今日专注数据</h2>
+            </div>
+            <span class="date-chip" id="today-date">-- / --</span>
+          </header>
+          <div class="stats-grid">
+            <article class="stat-card stat-primary">
+              <span class="stat-icon" aria-hidden="true">◷</span>
+              <div><strong id="focus-time-stat">0<span>m</span></strong><small>FOCUS TIME</small></div>
+              <span class="stat-delta" id="focus-goal">目标 120m</span>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon" aria-hidden="true">⬡</span>
+              <div><strong id="pomodoro-stat">0</strong><small>POMODOROS</small></div>
+              <div class="mini-bars" id="pomodoro-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon flame" aria-hidden="true">◇</span>
+              <div><strong id="streak-stat">0<span>d</span></strong><small>FOCUS STREAK</small></div>
+              <span class="stat-delta">KEEP SIGNAL</span>
+            </article>
+          </div>
+          <div class="daily-progress">
+            <div><span>DAILY UPLINK</span><strong id="daily-progress-label">0%</strong></div>
+            <div class="progress-track"><i id="daily-progress-bar"></i></div>
+          </div>
+        </section>
+
+        <section class="panel scene-panel" aria-labelledby="scene-heading">
+          <header class="panel-header compact">
+            <div>
+              <p class="eyebrow"><span>04</span> SELECT IMMERSIVE WORLD</p>
+              <h2 id="scene-heading">选择沉浸场景</h2>
+            </div>
+            <span class="scene-selection-status"><i></i><strong id="selected-scene-name">雨夜咖啡</strong></span>
+          </header>
+
+          <div class="scene-grid" id="scene-grid" role="radiogroup" aria-label="选择沉浸场景">
+            <button class="scene-card is-selected" type="button" role="radio" aria-checked="true" data-scene="rain">
+              <img src="assets/backgrounds/rain-cafe.png" alt="" />
+              <span class="scene-card-shade"></span>
+              <span class="scene-number">01</span>
+              <span class="scene-check" aria-hidden="true">✓</span>
+              <span class="scene-card-copy">
+                <strong>雨夜咖啡</strong>
+                <small>RAIN CAFE · DEFAULT</small>
+                <em>窗雨白噪音 · CC0</em>
+              </span>
+            </button>
+            <button class="scene-card" type="button" role="radio" aria-checked="false" data-scene="spring">
+              <img src="assets/backgrounds/spring-kite.png" alt="" />
+              <span class="scene-card-shade"></span>
+              <span class="scene-number">02</span>
+              <span class="scene-check" aria-hidden="true">✓</span>
+              <span class="scene-card-copy">
+                <strong>春野纸鸢</strong>
+                <small>WATERCOLOR FIELD</small>
+                <em>Childhood · CC BY 4.0</em>
+              </span>
+            </button>
+            <button class="scene-card" type="button" role="radio" aria-checked="false" data-scene="mechanical">
+              <img src="assets/backgrounds/rustline-core.png" alt="" />
+              <span class="scene-card-shade"></span>
+              <span class="scene-number">03</span>
+              <span class="scene-check" aria-hidden="true">✓</span>
+              <span class="scene-card-copy">
+                <strong>锈线核心</strong>
+                <small>RUSTLINE CORE</small>
+                <em>Machina · CC BY 4.0</em>
+              </span>
+            </button>
+            <button class="scene-card" type="button" role="radio" aria-checked="false" data-scene="montage">
+              <img src="assets/backgrounds/glass-montage.png" alt="" />
+              <span class="scene-card-shade"></span>
+              <span class="scene-number">04</span>
+              <span class="scene-check" aria-hidden="true">✓</span>
+              <span class="scene-card-copy">
+                <strong>玻璃漫游</strong>
+                <small>GLASS REVERIE</small>
+                <em>Sleep · CC BY 4.0</em>
+              </span>
+            </button>
+          </div>
+
+          <div class="scene-launch-strip">
+            <p><span>↳</span> 选择任务（可选）和倒计时，再选择场景；点击“开始沉浸”后自动进入全屏专注。</p>
+            <label class="scene-volume-control">
+              <span>场景音量</span>
+              <input id="scene-volume" type="range" min="0" max="100" value="42" />
+              <output id="scene-volume-output">42</output>
+            </label>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span><i></i> ALL DATA STORED LOCALLY</span>
+        <span>CHRONOSPACE / <strong>BUILD 01</strong></span>
+        <span>NO CLOUD · NO TRACKING · 100% YOURS</span>
+      </footer>
+    </div>
+
+    <div class="zen-exit" id="zen-exit">
+      <span class="immersive-status"><i></i><strong id="immersive-scene-label">雨夜咖啡</strong><small>IMMERSIVE SIGNAL</small></span>
+      <div class="immersive-sound-control">
+        <button id="immersive-mute" type="button" aria-pressed="false" title="静音">声音 ON</button>
+        <input id="immersive-volume" type="range" min="0" max="100" value="42" aria-label="沉浸场景音量" />
+      </div>
+      <button id="immersive-exit" type="button">退出沉浸 <kbd>Z</kbd></button>
+    </div>
+
+    <dialog id="task-dialog" class="cyber-dialog">
+      <form id="task-form" method="dialog">
+        <header>
+          <div><span>MISSION_EDITOR</span><h2 id="task-dialog-title">新建任务</h2></div>
+          <button class="dialog-close" type="button" data-close-dialog aria-label="关闭">×</button>
+        </header>
+        <input id="task-id" type="hidden" />
+        <label>
+          <span>任务标题 / TITLE</span>
+          <input id="task-title" name="title" type="text" maxlength="80" required autocomplete="off" placeholder="输入下一项关键任务…" />
+        </label>
+        <div class="form-row">
+          <label>
+            <span>优先级 / PRIORITY</span>
+            <select id="task-priority" name="priority">
+              <option value="high">HIGH · 高</option>
+              <option value="medium" selected>MEDIUM · 中</option>
+              <option value="low">LOW · 低</option>
+            </select>
+          </label>
+          <label>
+            <span>预估番茄 / ESTIMATE</span>
+            <input id="task-pomodoros" name="pomodoros" type="number" min="1" max="12" value="1" required />
+          </label>
+        </div>
+        <label>
+          <span>初始轨道 / STATUS</span>
+          <select id="task-column" name="column">
+            <option value="todo">待办 / TO-DO</option>
+            <option value="progress">进行中 / IN PROGRESS</option>
+            <option value="done">已完成 / DONE</option>
+          </select>
+        </label>
+        <footer>
+          <button class="danger-button" id="delete-task" type="button" hidden>删除任务</button>
+          <span class="form-spacer"></span>
+          <button class="ghost-button" type="button" data-close-dialog>取消</button>
+          <button class="submit-button" type="submit">写入任务轨道</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="settings-dialog" class="cyber-dialog settings-dialog">
+      <form id="settings-form" method="dialog">
+        <header>
+          <div><span>SYSTEM_CONFIG</span><h2>专注引擎设置</h2></div>
+          <button class="dialog-close" type="button" data-close-dialog aria-label="关闭">×</button>
+        </header>
+        <p class="dialog-note">所有设置仅保存在当前浏览器。正在运行的计时器会在保存后重置。</p>
+        <div class="duration-grid">
+          <label><span>专注时长</span><div><input id="focus-duration" type="number" min="1" max="180" value="25" /><b>MIN</b></div></label>
+          <label><span>短休时长</span><div><input id="short-duration" type="number" min="1" max="60" value="5" /><b>MIN</b></div></label>
+          <label><span>长休时长</span><div><input id="long-duration" type="number" min="1" max="90" value="15" /><b>MIN</b></div></label>
+          <label><span>每日目标</span><div><input id="daily-goal" type="number" min="10" max="720" step="10" value="120" /><b>MIN</b></div></label>
+        </div>
+        <label class="switch-row">
+          <span><strong>完成提示音</strong><small>阶段结束时播放一声合成提示音</small></span>
+          <input id="notification-sound" type="checkbox" checked />
+          <i aria-hidden="true"></i>
+        </label>
+        <footer>
+          <span class="form-spacer"></span>
+          <button class="ghost-button" type="button" data-close-dialog>取消</button>
+          <button class="submit-button" type="submit">保存系统配置</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <template id="task-card-template">
+      <article class="task-card" draggable="true" role="listitem">
+        <div class="task-card-top">
+          <span class="priority-badge"></span>
+          <button class="task-menu" type="button" data-action="edit" aria-label="编辑任务">•••</button>
+        </div>
+        <h4></h4>
+        <div class="task-card-meta">
+          <span class="pomodoro-estimate"><i aria-hidden="true">◉</i><b></b> POMO</span>
+          <span class="task-code"></span>
+        </div>
+        <div class="task-actions">
+          <button type="button" data-action="focus"><span aria-hidden="true">◎</span> 专注</button>
+          <button type="button" data-action="complete"><span aria-hidden="true">✓</span> 完成</button>
+        </div>
+      </article>
+    </template>
+
+    <noscript>ChronoSpace 需要 JavaScript 才能运行计时器、看板和氛围音功能。</noscript>
+  </body>
+</html>
